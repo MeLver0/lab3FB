@@ -1,11 +1,16 @@
 const express = require("express");
 const path = require("path");
+
+const yaml = require("yamljs");
+const swaggerUi = require("swagger-ui-express");
+
 const app = express();
 const PORT = 6662;
 
 // Настраиваем статическую папку
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public_admin")));
+
 
 //Pastse json файла 
 const fs = require("fs");
@@ -21,13 +26,13 @@ app.get("/api/products", (req,res) => {
     }
 });
 
-// Добавить товар/несколько товаров
+// Добавить товар
 app.post("/api/products", (req, res) => {
     try {
-        const newProducts = req.body; // Ожидаем массив [{ name, price, description, categories }]
+        const newProducts = req.body;
         let products = JSON.parse(fs.readFileSync(productsFile, "utf-8"));
 
-        // Добавляем новые товары с уникальными ID
+
         newProducts.forEach(product => {
             product.id = Date.now();
             products.push(product);
@@ -75,13 +80,13 @@ app.delete("/api/products/:id", (req, res) => {
 
 
 
+const swaggerDocument = yaml.load(path.join(__dirname, "../swagger.yaml"));
+console.log("Swagger YAML загружен:", swaggerDocument);
 
 
 
 
-app.use((req, res) => {
-    res.status(404).send("Страница не найдена");
-});
+
 
 
 // Главная страница
@@ -89,8 +94,12 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../public_admin/index.html"));
 });
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
+    console.log(`Документация доступна на http://localhost:${PORT}/api-docs`);
 });
 
